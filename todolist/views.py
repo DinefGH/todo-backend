@@ -7,6 +7,10 @@ from todolist.models import TodoItem
 from todolist.serializers import TodoItemSerializer
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.permissions import IsAuthenticated
+from datetime import date
+from .models import TodoItem
+from .serializers import TodoItemSerializer
+from rest_framework import status
 # Create your views here.
 
 
@@ -19,7 +23,19 @@ class TodoItemView(APIView):
         serializer = TodoItemSerializer(todos, many=True)
         return Response(serializer.data)
     
+    def post(self, request, format=None):
+        serializer = TodoItemSerializer(data=request.data, context={'request': request})
+        if serializer.is_valid():
+            serializer.save()  # 'author' and 'created_at' are set in the serializer's create method
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
 
+    def delete(self, request, pk, format=None):
+        todo = TodoItem.objects.filter(pk=pk, author=request.user).first()
+        if todo:
+            todo.delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        else:
+            return Response(status=status.HTTP_404_NOT_FOUND)
 
 class LoginView(ObtainAuthToken):
     def post(self, request, *args, **kwargs):
