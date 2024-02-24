@@ -11,6 +11,8 @@ from datetime import date
 from .models import TodoItem
 from .serializers import TodoItemSerializer
 from rest_framework import status
+from django.shortcuts import get_object_or_404
+import logging
 # Create your views here.
 
 
@@ -36,6 +38,24 @@ class TodoItemView(APIView):
             return Response(status=status.HTTP_204_NO_CONTENT)
         else:
             return Response(status=status.HTTP_404_NOT_FOUND)
+
+class TodoItemDetailView(APIView):
+    
+    """
+    Retrieve, update or delete a todo item instance.
+    """
+    def get_object(self, pk, user):
+        return get_object_or_404(TodoItem, pk=pk, author=user)
+
+    def delete(self, request, pk, format=None):
+        logger = logging.getLogger(__name__)
+        logger.debug(f"Attempting to delete TodoItem {pk} by user {request.user}")
+        if request.user.is_anonymous:
+            return Response(status=status.HTTP_403_FORBIDDEN)
+        todo_item = self.get_object(pk, request.user)
+        todo_item.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
 
 class LoginView(ObtainAuthToken):
     def post(self, request, *args, **kwargs):
